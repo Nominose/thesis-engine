@@ -75,28 +75,62 @@ ${body.segments && body.segments.length ? body.segments.join('\n') : 'No additio
 
 Output **only** the pure Markdown above. No greetings, no code fences, no extra commentary.`;
 
-    // Using gemini-2.5-flash — stable, free tier is generous (~10 RPM / 250 RPD),
-    // fast, 1M context. `?alt=sse` makes Gemini emit proper Server-Sent Events
-    // instead of a streamed JSON array.
-    const GEMINI_URL =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse';
+    // Model fallback chain: if the primary model is overloaded (503 / 429),
+    // retry on a lighter model before giving up. `?alt=sse` makes Gemini emit
+    // proper Server-Sent Events instead of a streamed JSON array.
+    const MODELS = [
+      'gemini-2.5-flash',      // primary — best quality/free-tier balance
+      'gemini-2.5-flash-lite', // lighter, usually has spare capacity
+      'gemini-flash-latest',   // Google-managed alias, last resort
+    ];
 
-    const upstream = await fetch(`${GEMINI_URL}&key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 2048,
-        },
-      }),
+    const buildUrl = (model: string) =>
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+    const requestBody = JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.6,
+        maxOutputTokens: 2048,
+      },
     });
 
-    if (!upstream.ok || !upstream.body) {
-      const errText = await upstream.text().catch(() => '');
-      console.error('Gemini error:', upstream.status, errText);
-      return res.status(502).json({ error: 'Gemini API 调用失败', detail: errText });
+    let upstream: Response | null = null;
+    let lastErrText = '';
+    for (const model of MODELS) {
+      try {
+        const r = await fetch(buildUrl(model), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+        if (r.ok && r.body) {
+          upstream = r;
+          console.log(`Gemini model used: ${model}`);
+          break;
+        }
+        // Only fall through to the next model on transient overload errors.
+        // 4xx client errors (bad key, bad request) shouldn't retry.
+        lastErrText = await r.text().catch(() => '');
+        const isTransient = r.status === 503 || r.status === 429 || r.status === 500;
+        console.error(`Gemini ${model} failed:`, r.status, lastErrText.slice(0, 200));
+        if (!isTransient) {
+          return res.status(502).json({
+            error: 'Gemini API 调用失败',
+            detail: lastErrText,
+          });
+        }
+      } catch (e) {
+        lastErrText = e instanceof Error ? e.message : String(e);
+        console.error(`Gemini ${model} threw:`, lastErrText);
+      }
+    }
+
+    if (!upstream || !upstream.body) {
+      return res.status(503).json({
+        error: 'Gemini 所有候选模型当前都过载，请稍后重试',
+        detail: lastErrText,
+      });
     }
 
     // Switch to SSE mode
