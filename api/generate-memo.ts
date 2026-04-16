@@ -76,12 +76,18 @@ ${body.segments && body.segments.length ? body.segments.join('\n') : 'No additio
 Output **only** the pure Markdown above. No greetings, no code fences, no extra commentary.`;
 
     // Model fallback chain: if the primary model is overloaded (503 / 429),
-    // retry on a lighter model before giving up. `?alt=sse` makes Gemini emit
-    // proper Server-Sent Events instead of a streamed JSON array.
+    // retry on a different model before giving up. `?alt=sse` makes Gemini
+    // emit proper Server-Sent Events instead of a streamed JSON array.
+    //
+    // Order picks full-size models from newest to older generations first
+    // (each has its own free-tier quota bucket), and only falls back to a
+    // `-lite` model as a last resort since lite produces noticeably shorter
+    // / more likely-to-truncate output.
     const MODELS = [
-      'gemini-2.5-flash',      // primary — best quality/free-tier balance
-      'gemini-2.5-flash-lite', // lighter, usually has spare capacity
-      'gemini-flash-latest',   // Google-managed alias, last resort
+      'gemini-2.5-flash',      // primary — best quality, 250 RPD free
+      'gemini-2.0-flash',      // separate quota, very similar quality
+      'gemini-flash-latest',   // Google-managed alias, whatever is healthiest
+      'gemini-2.5-flash-lite', // last resort — output may truncate
     ];
 
     const buildUrl = (model: string) =>
