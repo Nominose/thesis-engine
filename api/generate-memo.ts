@@ -91,15 +91,24 @@ Output **only** the pure Markdown above. No greetings, no code fences, no extra 
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.6,
-        // No maxOutputTokens — let the model decide when to stop. The memo is
-        // short by nature (prompt asks for 4+4 bullets + 1 paragraph + 1 line),
-        // and the model will stop at the format boundary on its own.
-        // An artificial cap was truncating Chinese memos mid-sentence.
-        //
-        // 2.5 Flash is a thinking model. Disable its thinking budget so all
-        // tokens go toward the user-visible memo instead of internal reasoning.
+        // Explicitly set to the model's maximum. Leaving this unset relied on
+        // a Gemini default that was sometimes lower than expected, causing
+        // mid-memo truncation. 65536 is 2.5 Flash's hard ceiling.
+        maxOutputTokens: 65536,
+        // Disable thinking — its tokens share the output budget and we don't
+        // need chain-of-thought for a structured Markdown memo.
         thinkingConfig: { thinkingBudget: 0 },
       },
+      // Financial commentary can nudge the default safety thresholds and
+      // cause premature termination with finishReason: SAFETY. Relax the
+      // thresholds to the most permissive free-tier level (BLOCK_ONLY_HIGH)
+      // so balanced Bull/Bear analysis isn't blocked mid-stream.
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
     });
 
     let upstream: Response | null = null;
@@ -164,13 +173,24 @@ Output **only** the pure Markdown above. No greetings, no code fences, no extra 
 
         try {
           const parsed = JSON.parse(dataStr);
-          const text: string =
-            parsed?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          const candidate = parsed?.candidates?.[0];
+          const text: string = candidate?.content?.parts?.[0]?.text ?? '';
+          const finishReason: string | undefined = candidate?.finishReason;
+
           if (text) {
             // Escape embedded newlines so each chunk stays on one `data:` line.
             // Frontend decodes \\n back into \n on receive.
             const safe = text.replace(/\r?\n/g, '\\n');
             res.write(`data: ${safe}\n\n`);
+          }
+
+          // If Gemini stopped for any reason other than a normal STOP, surface
+          // it to the logs so we can diagnose truncations. SAFETY / MAX_TOKENS
+          // / RECITATION are the usual suspects.
+          if (finishReason && finishReason !== 'STOP') {
+            console.error(`Gemini finishReason: ${finishReason}`, {
+              safetyRatings: candidate?.safetyRatings,
+            });
           }
         } catch {
           // Ignore malformed chunks
