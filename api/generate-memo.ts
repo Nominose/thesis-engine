@@ -152,6 +152,32 @@ Output **only** the pure Markdown above. No greetings, no code fences, no extra 
     const decoder = new TextDecoder();
     let buffer = '';
 
+    // Process a batch of SSE lines (data: {...}) and re-emit `text` chunks to
+    // the browser. Extracted so we can call it both inside the read loop AND
+    // once more after the loop ends to flush any trailing bytes.
+    const processLines = (lines: string[]) => {
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const dataStr = trimmed.slice(5).trim();
+        if (!dataStr || dataStr === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(dataStr);
+          const text: string =
+            parsed?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+          if (text) {
+            // Escape embedded newlines so each chunk stays on one `data:` line.
+            // Frontend decodes \\n back into \n on receive.
+            const safe = text.replace(/\r?\n/g, '\\n');
+            res.write(`data: ${safe}\n\n`);
+          }
+        } catch {
+          // Ignore malformed chunks
+        }
+      }
+    };
+
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -160,29 +186,16 @@ Output **only** the pure Markdown above. No greetings, no code fences, no extra 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() ?? '';
+        processLines(lines);
+      }
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-          const dataStr = trimmed.slice(5).trim();
-          if (!dataStr || dataStr === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(dataStr);
-            const text: string =
-              parsed?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-            if (text) {
-              // Re-emit as plain SSE to the browser.
-              // Escape any embedded newlines so each chunk stays on one data: line.
-              const safe = text.replace(/\r?\n/g, '\\n');
-              res.write(`data: ${safe}\n\n`);
-              // Preserve actual newlines by emitting a separate chunk per line
-              // isn't strictly necessary — the frontend decodes \\n back into \n.
-            }
-          } catch {
-            // Ignore malformed chunks
-          }
-        }
+      // Flush any remaining bytes. If Gemini sent the last event without a
+      // trailing newline (observed in practice — caused the last few chars
+      // of the Verdict to be dropped), its content was still sitting in
+      // `buffer` when the stream ended. Drain the decoder then process.
+      buffer += decoder.decode();
+      if (buffer.length > 0) {
+        processLines([buffer]);
       }
     } finally {
       res.write('data: [DONE]\n\n');

@@ -144,12 +144,10 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+      // Extracted so we can call it both inside the read loop AND once more
+      // after the loop ends, to flush any trailing bytes that didn't arrive
+      // with a terminating newline.
+      const processLines = (lines: string[]) => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const chunk = line.slice(6);
@@ -161,6 +159,23 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
             }
           }
         }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        processLines(lines);
+      }
+
+      // Flush trailing buffer — the last SSE event may arrive without a
+      // final newline, and without this its content would be silently
+      // dropped (manifested as truncation at the end of Verdict).
+      buffer += decoder.decode();
+      if (buffer.length > 0) {
+        processLines([buffer]);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : '生成失败';
