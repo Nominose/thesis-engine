@@ -151,9 +151,13 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      // Accumulate into a local variable so we flush once at the end,
-      // avoiding the (previously observed) issue where the very last
-      // setMemo call was dropped before re-render.
+      // Collect every chunk into a local variable. We deliberately do NOT
+      // call setMemo during streaming — React 19's concurrent scheduler was
+      // silently dropping the later renders when setMemo fired rapidly from
+      // each SSE chunk, leaving the DOM stuck on an early intermediate state
+      // (observed: DOM at memo=281 while parser was happily running at
+      // memo=498). For a 3-5 second generation, doing one commit at the end
+      // is simpler and 100% reliable.
       let accumulated = '';
 
       const processLines = (lines: string[]) => {
@@ -165,8 +169,6 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
               // decode it back here.
               const decoded = chunk.replace(/\\n/g, '\n');
               accumulated += decoded;
-              // Push to React state so the UI updates live as chunks arrive.
-              setMemo(accumulated);
             }
           }
         }
@@ -189,12 +191,8 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
         processLines([buffer]);
       }
 
-      // Final authoritative set, wrapped in flushSync so the commit happens
-      // SYNCHRONOUSLY before we fall through to the `finally` block's
-      // setLoading(false). Without flushSync, React 19's concurrent
-      // scheduler was sometimes committing the penultimate render (e.g.
-      // the chunk right before the last) as the final DOM state — the
-      // very last setMemo was being discarded in favor of a stale render.
+      // One authoritative commit. flushSync makes it synchronous so the
+      // DOM update happens before `setLoading(false)` fires in `finally`.
       flushSync(() => {
         setMemo(accumulated);
       });
@@ -288,6 +286,13 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
           <div className="py-16 text-center">
             <i className="fa-solid fa-sparkles text-[#484f58] text-3xl mb-3" />
             <p className="text-[#8b949e] text-sm">{t('memo.empty')}</p>
+          </div>
+        )}
+
+        {loading && !hasContent && !error && (
+          <div className="py-16 text-center">
+            <i className="fa-solid fa-circle-notch animate-spin text-[#3fb950] text-3xl mb-3" />
+            <p className="text-[#8b949e] text-sm">{t('memo.streaming')}</p>
           </div>
         )}
 
