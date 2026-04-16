@@ -144,9 +144,11 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      // Extracted so we can call it both inside the read loop AND once more
-      // after the loop ends, to flush any trailing bytes that didn't arrive
-      // with a terminating newline.
+      // Accumulate into a local variable so we flush once at the end,
+      // avoiding the (previously observed) issue where the very last
+      // setMemo call was dropped before re-render.
+      let accumulated = '';
+
       const processLines = (lines: string[]) => {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -155,7 +157,9 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
               // Backend escapes \n -> \\n so each SSE event stays one line;
               // decode it back here.
               const decoded = chunk.replace(/\\n/g, '\n');
-              setMemo((prev) => prev + decoded);
+              accumulated += decoded;
+              // Push to React state so the UI updates live as chunks arrive.
+              setMemo(accumulated);
             }
           }
         }
@@ -177,6 +181,10 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
       if (buffer.length > 0) {
         processLines([buffer]);
       }
+
+      // Final authoritative set — protects against any in-flight setState
+      // being swallowed by React batching at stream end.
+      setMemo(accumulated);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '生成失败';
       setError(msg);
