@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import type { HKStock } from '../data/hk-stocks';
 import { useLang } from '../i18n/LanguageContext';
 import type { TranslationKey } from '../i18n/dictionaries';
@@ -97,21 +98,10 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parsed = useMemo(() => {
-    const result = parseMemo(memo);
-    // Diagnostic: what did the parser actually extract?
-    if (memo.length > 100) {
-      console.log(
-        '%c[parser] memo.length:',
-        'color:#a371f7',
-        memo.length,
-        'verdict.length:',
-        result.verdict.length,
-      );
-      console.log('[parser] verdict text:', result.verdict);
-    }
-    return result;
-  }, [memo]);
+  // Intentionally NOT memoized: we want parseMemo to run on every render so
+  // the UI can never be stuck showing a stale parse result. The computation
+  // is cheap (plain regex on a ~500-char string).
+  const parsed = parseMemo(memo);
 
   const generate = useCallback(async () => {
     if (!stock) return;
@@ -181,15 +171,16 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
         processLines([buffer]);
       }
 
-      // Final authoritative set — protects against any in-flight setState
-      // being swallowed by React batching at stream end.
-      setMemo(accumulated);
+      // Final authoritative set, wrapped in flushSync so the commit happens
+      // SYNCHRONOUSLY before we fall through to the `finally` block's
+      // setLoading(false). Without flushSync, React 19's concurrent
+      // scheduler was sometimes committing the penultimate render (e.g.
+      // the chunk right before the last) as the final DOM state — the
+      // very last setMemo was being discarded in favor of a stale render.
+      flushSync(() => {
+        setMemo(accumulated);
+      });
 
-      // Debug: log the complete accumulated memo so we can verify the
-      // browser actually received everything. Compare this in the Console
-      // against what the UI renders — if they disagree, the parser is wrong;
-      // if they agree but differ from the /api/generate-memo Response tab,
-      // the frontend dropped chunks.
       console.log(
         '%c[memo] stream finished, total chars:',
         'color:#3fb950',
