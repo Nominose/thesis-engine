@@ -14,61 +14,46 @@ interface ParsedMemo {
   verdict: string;
 }
 
-/** 把流式 Markdown 粗略解析为 Bull / Bear / Risk / Verdict 四块 */
+/** Slice the memo into four sections by Markdown headers. */
+function extractSection(raw: string, name: string, nextNames: string[]): string {
+  // Match **Name** (anything until end-of-line) then capture up to the next
+  // section header (or end of string). `[\s\S]` matches anything including \n.
+  const lookahead = nextNames.length
+    ? `(?=\\*\\*(?:${nextNames.join('|')})\\*\\*|$)`
+    : '(?=$)';
+  const pattern = new RegExp(
+    `\\*\\*${name}\\*\\*[^\\n]*\\n([\\s\\S]*?)${lookahead}`,
+    'i',
+  );
+  const m = raw.match(pattern);
+  return m ? m[1].trim() : '';
+}
+
+/** Split a section body into bullet points ("- xxx" lines). */
+function parseBullets(section: string): string[] {
+  if (!section) return [];
+  return section
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('-'))
+    .map((l) => l.replace(/^-\s*/, ''));
+}
+
+/** Parse a streaming Markdown memo into its four structural sections. */
 function parseMemo(raw: string): ParsedMemo {
-  const result: ParsedMemo = {
-    bullPoints: [],
-    bearPoints: [],
-    keyRisk: '',
-    verdict: '',
+  if (!raw) return { bullPoints: [], bearPoints: [], keyRisk: '', verdict: '' };
+
+  const bullSection = extractSection(raw, 'Bull Case', ['Bear Case', 'Key Risk', 'Verdict']);
+  const bearSection = extractSection(raw, 'Bear Case', ['Key Risk', 'Verdict']);
+  const riskSection = extractSection(raw, 'Key Risk', ['Verdict']);
+  const verdictSection = extractSection(raw, 'Verdict', []);
+
+  return {
+    bullPoints: parseBullets(bullSection),
+    bearPoints: parseBullets(bearSection),
+    keyRisk: riskSection.replace(/\n+/g, ' ').trim(),
+    verdict: verdictSection.replace(/\n+/g, ' ').trim(),
   };
-  if (!raw) return result;
-
-  const lines = raw.split('\n');
-  let current: 'bull' | 'bear' | 'risk' | 'verdict' | null = null;
-  const bullBuf: string[] = [];
-  const bearBuf: string[] = [];
-  const riskBuf: string[] = [];
-  const verdictBuf: string[] = [];
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
-
-    const lower = line.toLowerCase();
-    if (lower.includes('**bull case**') || lower.startsWith('bull case')) {
-      current = 'bull';
-      continue;
-    }
-    if (lower.includes('**bear case**') || lower.startsWith('bear case')) {
-      current = 'bear';
-      continue;
-    }
-    if (lower.includes('**key risk**') || lower.startsWith('key risk')) {
-      current = 'risk';
-      continue;
-    }
-    if (lower.includes('**verdict**') || lower.startsWith('verdict')) {
-      current = 'verdict';
-      continue;
-    }
-
-    if (current === 'bull' && line.startsWith('-')) {
-      bullBuf.push(line.replace(/^-\s*/, ''));
-    } else if (current === 'bear' && line.startsWith('-')) {
-      bearBuf.push(line.replace(/^-\s*/, ''));
-    } else if (current === 'risk') {
-      riskBuf.push(line);
-    } else if (current === 'verdict') {
-      verdictBuf.push(line);
-    }
-  }
-
-  result.bullPoints = bullBuf;
-  result.bearPoints = bearBuf;
-  result.keyRisk = riskBuf.join(' ').trim();
-  result.verdict = verdictBuf.join(' ').trim();
-  return result;
 }
 
 function verdictStyle(verdict: string): {
@@ -112,7 +97,21 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parsed = useMemo(() => parseMemo(memo), [memo]);
+  const parsed = useMemo(() => {
+    const result = parseMemo(memo);
+    // Diagnostic: what did the parser actually extract?
+    if (memo.length > 100) {
+      console.log(
+        '%c[parser] memo.length:',
+        'color:#a371f7',
+        memo.length,
+        'verdict.length:',
+        result.verdict.length,
+      );
+      console.log('[parser] verdict text:', result.verdict);
+    }
+    return result;
+  }, [memo]);
 
   const generate = useCallback(async () => {
     if (!stock) return;
