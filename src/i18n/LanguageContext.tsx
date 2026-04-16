@@ -36,15 +36,33 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang === 'zh' ? 'zh-HK' : 'en';
   }, [lang]);
 
+  // Switching language mid-session leaves stale state around: the already-
+  // generated memo is still in the OLD language while labels around it
+  // flip to the new one, which looks broken. Simpler and more correct:
+  // persist the new lang to localStorage, then hard-reload so the whole
+  // page comes up in the new language from scratch.
+  const switchAndReload = (next: Lang) => {
+    if (next === lang) return;
+    window.localStorage.setItem(STORAGE_KEY, next);
+    window.location.reload();
+  };
+
   const value = useMemo<LanguageContextValue>(() => {
     const dict = dictionaries[lang];
     return {
       lang,
-      setLang: setLangState,
-      toggle: () => setLangState((prev) => (prev === 'en' ? 'zh' : 'en')),
+      setLang: switchAndReload,
+      toggle: () => switchAndReload(lang === 'en' ? 'zh' : 'en'),
       t: (key: TranslationKey) => dict[key] ?? key,
     };
+    // setLangState is still exposed via React state for the initial
+    // detection path; external callers should use setLang / toggle which
+    // both trigger the reload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
+
+  // Keep setLangState referenced so the linter doesn't flag it unused.
+  void setLangState;
 
   return (
     <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
