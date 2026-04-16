@@ -103,6 +103,24 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
   // is cheap (plain regex on a ~500-char string).
   const parsed = parseMemo(memo);
 
+  // Diagnostic — show on every render what sections got extracted.
+  if (memo.length > 50) {
+    console.log(
+      '[render] memo:',
+      memo.length,
+      '| risk:',
+      parsed.keyRisk.length,
+      '| verdict:',
+      parsed.verdict.length,
+    );
+    if (parsed.keyRisk.length > 0) {
+      console.log('  risk tail:', JSON.stringify(parsed.keyRisk.slice(-15)));
+    }
+    if (parsed.verdict.length > 0) {
+      console.log('  verdict tail:', JSON.stringify(parsed.verdict.slice(-15)));
+    }
+  }
+
   const generate = useCallback(async () => {
     if (!stock) return;
     setLoading(true);
