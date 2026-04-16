@@ -220,4 +220,4 @@ MIT（课程项目）
 
 ## 🙏 致谢
 
-本项目是 XJTLU ENT208TC Industry Readiness 课程作业。感谢课程导师提供的 Pathfinder 框架（Pathfinder: Viren Vul），以及 Google Gemini API 提供的免费额度。
+本项目是 XJTLU ENT208TC Industry Readiness 课程作业。感谢 Google Gemini API 提供的免费额度。
