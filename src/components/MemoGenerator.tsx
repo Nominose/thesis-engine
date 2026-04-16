@@ -185,6 +185,18 @@ const MemoGenerator = ({ stock }: MemoGeneratorProps) => {
       // Final authoritative set — protects against any in-flight setState
       // being swallowed by React batching at stream end.
       setMemo(accumulated);
+
+      // Debug: log the complete accumulated memo so we can verify the
+      // browser actually received everything. Compare this in the Console
+      // against what the UI renders — if they disagree, the parser is wrong;
+      // if they agree but differ from the /api/generate-memo Response tab,
+      // the frontend dropped chunks.
+      console.log(
+        '%c[memo] stream finished, total chars:',
+        'color:#3fb950',
+        accumulated.length,
+      );
+      console.log(accumulated);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '生成失败';
       setError(msg);
