@@ -91,7 +91,15 @@ Output **only** the pure Markdown above. No greetings, no code fences, no extra 
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.6,
-        maxOutputTokens: 2048,
+        // Chinese ≈ 1 token/char vs English ≈ 0.25 token/char. 2048 was too
+        // tight for zh memos and caused mid-sentence truncation. 8192 leaves
+        // plenty of headroom for either language.
+        maxOutputTokens: 8192,
+        // 2.5 Flash is a thinking model. Disable its thinking budget so all
+        // tokens go toward the user-visible memo instead of internal reasoning.
+        // For a structured memo the format constraint is enough guidance —
+        // we don't need chain-of-thought.
+        thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
