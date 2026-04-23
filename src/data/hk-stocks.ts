@@ -18,6 +18,12 @@ export interface FinancialData {
   operatingMargin: number; // %
   peRatio: number;
   marketCap: number; // billion HKD
+  // 添加这5个字段
+  currentPrice: number;      // 当前股价
+  changePercent: number;     // 涨跌幅百分比
+  pbRatio: number;           // 市净率
+  dividendYield: number;     // 股息率
+  roe: number;               // 净资产收益率
 }
 
 export interface HKStock {
@@ -49,6 +55,12 @@ export const HK_STOCKS: HKStock[] = [
       operatingMargin: 31.2,
       peRatio: 18.5,
       marketCap: 3850,
+      // 第一步：添加对比模块需要的新字段
+      currentPrice: 377.60,      // 当前股价
+      changePercent: -0.79,       // 涨跌幅百分比
+      pbRatio: 3.2,              // 市净率
+      dividendYield: 0.98,       // 股息率
+      roe: 21.3,                 // 净资产收益率
     },
     segments: [
       {
@@ -100,6 +112,11 @@ export const HK_STOCKS: HKStock[] = [
       operatingMargin: 7.4,
       peRatio: 28.3,
       marketCap: 1380,
+      currentPrice: 13.76,        // 当前股价
+      changePercent: 0.44,        // 涨跌幅百分比
+      pbRatio: 2.1,               // 市净率
+      dividendYield: 0.5,         // 股息率
+      roe: 10.2,                  // 净资产收益率
     },
     segments: [
       {
@@ -152,6 +169,12 @@ export const HK_STOCKS: HKStock[] = [
       operatingMargin: 10.6,
       peRatio: 22.1,
       marketCap: 920,
+      // 第一步：添加对比模块需要的新字段
+      currentPrice: 108.20,       // 当前股价
+      changePercent: 1.45,         // 涨跌幅百分比
+      pbRatio: 3.8,               // 市净率
+      dividendYield: 0,           // 股息率
+      roe: 8.5,                   // 净资产收益率
     },
     segments: [
       {
@@ -193,6 +216,12 @@ export const HK_STOCKS: HKStock[] = [
       operatingMargin: 19.3,
       peRatio: 10.8,
       marketCap: 310,
+      // 第一步：添加对比模块需要的新字段
+      currentPrice: 92.35,        // 当前股价
+      changePercent: 2.13,        // 涨跌幅百分比
+      pbRatio: 1.8,               // 市净率
+      dividendYield: 1.24,        // 股息率
+      roe: 14.8,                  // 净资产收益率
     },
     segments: [
       {
@@ -233,6 +262,12 @@ export const HK_STOCKS: HKStock[] = [
       operatingMargin: 3.8,
       peRatio: 9.4,
       marketCap: 450,
+      // 第一步：添加对比模块需要的新字段
+      currentPrice: 105.60,       // 当前股价
+      changePercent: 0.22,         // 涨跌幅百分比
+      pbRatio: 0.9,               // 市净率
+      dividendYield: 2.8,         // 股息率
+      roe: 12.5,                  // 净资产收益率
     },
     segments: [
       {

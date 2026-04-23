@@ -64,6 +64,22 @@ export const dictionaries = {
     // Footer
     'footer.team': '© 2026 Team Expedition 33 · XJTLU ENT208TC',
     'footer.disclaimer': 'Sprint 1 demo · Cached data · Not investment advice',
+
+    // Comparison Module
+    'comparison.title': 'Dual Stock Comparison',
+    'comparison.subtitle': 'Side-by-side comparison of key financial metrics',
+    'comparison.instructions': 'Select two stocks to compare their key metrics',
+    'comparison.selectLeft': 'Select Left Stock',
+    'comparison.selectRight': 'Select Right Stock',
+    'comparison.vs': 'VS',
+    'comparison.currentPrice': 'Current Price',
+    'comparison.changePercent': 'Change %',
+    'comparison.peRatio': 'P/E Ratio',
+    'comparison.pbRatio': 'P/B Ratio',
+    'comparison.dividendYield': 'Dividend Yield',
+    'comparison.roe': 'ROE',
+    'comparison.better': 'Better',
+    'comparison.worse': 'Worse',
   },
   zh: {
     // Header
@@ -126,6 +142,22 @@ export const dictionaries = {
     // Footer
     'footer.team': '© 2026 Team Expedition 33 · XJTLU ENT208TC',
     'footer.disclaimer': 'Sprint 1 演示 · 缓存数据 · 不构成投资建议',
+
+    // 对比模块
+    'comparison.title': '双股对比',
+    'comparison.subtitle': '并排比较两只股票的核心财务指标',
+    'comparison.instructions': '选择两只股票比较核心指标',
+    'comparison.selectLeft': '选择左侧股票',
+    'comparison.selectRight': '选择右侧股票',
+    'comparison.vs': 'VS',
+    'comparison.currentPrice': '当前价格',
+    'comparison.changePercent': '涨跌幅',
+    'comparison.peRatio': '市盈率',
+    'comparison.pbRatio': '市净率',
+    'comparison.dividendYield': '股息率',
+    'comparison.roe': '净资产收益率',
+    'comparison.better': '占优',
+    'comparison.worse': '落后',
   },
 } as const;
 

@@ -5,6 +5,10 @@ import MemoGenerator from './components/MemoGenerator';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { HKStock } from './data/hk-stocks';
 import { useLang } from './i18n/LanguageContext';
+import { HK_STOCKS } from './data/hk-stocks'; // 导入股票数据用于对比
+
+// 新增：导入 ComparisonTable 组件
+import ComparisonTable from './components/ComparisonTable';
 
 const queryClient = new QueryClient();
 
@@ -60,6 +64,9 @@ function LanguageToggle() {
 function AppContent() {
   const { t, lang } = useLang();
   const [selected, setSelected] = useState<HKStock | null>(null);
+  // 新增：添加对比股票的状态
+  const [compareLeft, setCompareLeft] = useState<HKStock | null>(null);
+  const [compareRight, setCompareRight] = useState<HKStock | null>(null);
 
   // Localize the stock name for display (English name if en, Chinese name if zh)
   const displayName = (s: HKStock) => (lang === 'en' ? s.nameEn : s.name);
@@ -168,6 +175,85 @@ function AppContent() {
             </div>
           </div>
         )}
+
+        {/* 新增：双股对比模块 */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <i className="fa-solid fa-scale-balanced text-[#8b949e] text-sm" />
+            <h3 className="text-[#8b949e] text-xs font-mono font-semibold uppercase tracking-widest">
+              {t('comparison.title')}
+            </h3>
+          </div>
+          
+          {/* 对比表格 */}
+          <div className="mb-6">
+            <ComparisonTable 
+              leftStock={compareLeft} 
+              rightStock={compareRight} 
+            />
+          </div>
+          
+          {/* 对比选择器 */}
+          <div className="mb-8">
+            <p className="text-[#8b949e] text-sm mb-4">
+              {t('comparison.subtitle')}
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-[#8b949e] text-xs uppercase tracking-widest mb-2">
+                  {t('comparison.selectLeft')}
+                </div>
+                <div className="relative">
+                  <StockCodeSearch
+                    onSelect={setCompareLeft}
+                    selected={compareLeft}
+                    placeholder={t('search.placeholder')}
+                    excludeStock={compareRight}
+                  />
+                  {compareLeft && (
+                    <button
+                      onClick={() => setCompareLeft(null)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2
+                                 bg-[#21262d] text-[#8b949e] hover:text-[#e6edf3]
+                                 w-6 h-6 rounded-full flex items-center justify-center
+                                 border border-[#30363d] hover:border-[#3fb950] transition-colors"
+                      title={t('comparison.selectLeft')}
+                    >
+                      <i className="fa-solid fa-times text-xs" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <div className="text-[#8b949e] text-xs uppercase tracking-widest mb-2">
+                  {t('comparison.selectRight')}
+                </div>
+                <div className="relative">
+                  <StockCodeSearch
+                    onSelect={setCompareRight}
+                    selected={compareRight}
+                    placeholder={t('search.placeholder')}
+                    excludeStock={compareLeft}
+                  />
+                  {compareRight && (
+                    <button
+                      onClick={() => setCompareRight(null)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2
+                                 bg-[#21262d] text-[#8b949e] hover:text-[#e6edf3]
+                                 w-6 h-6 rounded-full flex items-center justify-center
+                                 border border-[#30363d] hover:border-[#3fb950] transition-colors"
+                      title={t('comparison.selectRight')}
+                    >
+                      <i className="fa-solid fa-times text-xs" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Memo + Revenue */}
         <div className="space-y-6">
