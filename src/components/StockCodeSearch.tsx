@@ -22,12 +22,23 @@ interface StockCodeSearchProps {
   onSelect: (stock: HKStock) => void;
   selected?: HKStock | null;
   placeholder?: string;
+  // 第五步：添加排除股票参数
+  excludeStock?: HKStock | null;  // 新增
 }
 
-const filterStocks = (term: string): HKStock[] => {
+// 第五步：修改过滤函数，支持排除股票
+const filterStocks = (term: string, excludeStock?: HKStock | null): HKStock[] => {
   const q = term.trim().toLowerCase();
-  if (!q) return HK_STOCKS;
-  return HK_STOCKS.filter(
+  let stocks = HK_STOCKS;
+  
+  // 如果传入了 excludeStock，则排除这只股票
+  if (excludeStock) {
+    stocks = stocks.filter(s => s.symbol !== excludeStock.symbol);
+  }
+  
+  if (!q) return stocks;
+  
+  return stocks.filter(
     (s) =>
       s.code.includes(q) ||
       s.symbol.toLowerCase().includes(q) ||
@@ -37,7 +48,7 @@ const filterStocks = (term: string): HKStock[] => {
 };
 
 const StockCodeSearch = React.forwardRef<HTMLInputElement, StockCodeSearchProps>(
-  ({ onSelect, selected, placeholder }, ref) => {
+  ({ onSelect, selected, placeholder, excludeStock }, ref) => {  // 第五步：接收 excludeStock
     const { t, lang } = useLang();
     const [query, setQuery] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
@@ -45,7 +56,11 @@ const StockCodeSearch = React.forwardRef<HTMLInputElement, StockCodeSearchProps>
     const dropdownRef = useRef<HTMLDivElement>(null);
     const debouncedQuery = useDebounce(query, 200);
 
-    const options = useMemo(() => filterStocks(debouncedQuery), [debouncedQuery]);
+    // 第五步：在过滤时传入 excludeStock
+    const options = useMemo(
+      () => filterStocks(debouncedQuery, excludeStock), 
+      [debouncedQuery, excludeStock]  // 添加 excludeStock 依赖
+    );
 
     // 点击外部关闭
     useEffect(() => {
