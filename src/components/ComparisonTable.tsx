@@ -17,36 +17,42 @@ export default function ComparisonTable({ leftStock, rightStock }: ComparisonTab
     {
       key: 'currentPrice',
       label: t('comparison.currentPrice'),
+      tip: t('tip.currentPrice'),
       format: (value: number) => `HK$${value.toFixed(2)}`,
       better: (a: number, b: number) => a > b, // 价格越高越好
     },
     {
       key: 'changePercent',
       label: t('comparison.changePercent'),
+      tip: t('tip.changePercent'),
       format: (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`,
       better: (a: number, b: number) => a > b, // 涨幅越大越好
     },
     {
       key: 'peRatio',
       label: t('comparison.peRatio'),
+      tip: t('tip.pe'),
       format: (value: number) => `${value.toFixed(1)}x`,
       better: (a: number, b: number) => a < b, // PE越低越好
     },
     {
       key: 'pbRatio',
       label: t('comparison.pbRatio'),
+      tip: t('tip.pbRatio'),
       format: (value: number) => `${value.toFixed(1)}x`,
       better: (a: number, b: number) => a < b, // PB越低越好
     },
     {
       key: 'dividendYield',
       label: t('comparison.dividendYield'),
+      tip: t('tip.dividendYield'),
       format: (value: number) => `${value.toFixed(2)}%`,
       better: (a: number, b: number) => a > b, // 股息率越高越好
     },
     {
       key: 'roe',
       label: t('comparison.roe'),
+      tip: t('tip.roe'),
       format: (value: number) => `${value.toFixed(1)}%`,
       better: (a: number, b: number) => a > b, // ROE越高越好
     },
@@ -178,7 +184,19 @@ export default function ComparisonTable({ leftStock, rightStock }: ComparisonTab
                 return (
                   <tr key={metric.key} className={index % 2 === 0 ? 'bg-[#0d1117]' : 'bg-[#161b22]'}>
                     <td className="py-3 px-4 text-[#8b949e] text-sm font-medium">
-                      {metric.label}
+                      <span className="group relative inline-flex items-center gap-1.5 cursor-help">
+                        {metric.label}
+                        <i className="fa-regular fa-circle-question text-[#484f58] text-[11px] group-hover:text-[#8b949e] transition-colors" />
+                        <span
+                          role="tooltip"
+                          className="pointer-events-none absolute left-0 top-full mt-1 w-64
+                                     rounded-lg border border-[#30363d] bg-[#161b27]/95 backdrop-blur-md
+                                     px-3 py-2 text-xs leading-5 text-[#c9d1d9] shadow-lg normal-case
+                                     opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30"
+                        >
+                          {metric.tip}
+                        </span>
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">

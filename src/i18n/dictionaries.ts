@@ -25,6 +25,30 @@ export const dictionaries = {
     'snapshot.unitMHKD': 'M HKD',
     'snapshot.unitBHKD': 'B HKD',
 
+    // Tooltip explanations for financial metrics
+    'tip.revenue':
+      'Total sales over the reporting period — the headline scale of the business.',
+    'tip.netIncome':
+      "The bottom line: revenue minus every cost, tax, and interest expense. What's actually left for shareholders.",
+    'tip.growth':
+      "Year-over-year revenue change. Positive = expanding business; negative = shrinking.",
+    'tip.grossMargin':
+      "(Revenue − Cost of goods sold) ÷ Revenue. How much pricing power the company has — higher = stronger.",
+    'tip.pe':
+      'Price-to-Earnings: stock price ÷ earnings per share. Lower usually means cheaper relative to profits.',
+    'tip.marketCap':
+      'Total company value: share price × total shares outstanding.',
+    'tip.currentPrice':
+      'Latest closing share price on the Hong Kong Stock Exchange.',
+    'tip.changePercent':
+      'Daily price change versus the previous close. Green = up, red = down.',
+    'tip.pbRatio':
+      "Price-to-Book: share price ÷ book value per share. Lower can signal undervalued (or trouble in the business).",
+    'tip.dividendYield':
+      'Annual dividends per share ÷ share price. The cash-return component of holding the stock.',
+    'tip.roe':
+      "Return on Equity: net income ÷ shareholder equity. How efficiently the company turns equity into profit.",
+
     // Search
     'search.placeholder': 'Search HK ticker / name (e.g. 0700 Tencent)',
     'search.empty': 'No matching HK stock',
@@ -104,6 +128,25 @@ export const dictionaries = {
     'snapshot.marketCap': '市值',
     'snapshot.unitMHKD': '百万港元',
     'snapshot.unitBHKD': '十亿港元',
+
+    // 财务指标的悬停解释
+    'tip.revenue': '报告期内公司的总销售额，反映业务规模的核心数字。',
+    'tip.netIncome':
+      '净利润 = 营收扣除所有成本、税费、利息之后真正落到股东口袋里的钱。',
+    'tip.growth': '营收同比增速。正数说明业务在扩张，负数说明在萎缩。',
+    'tip.grossMargin':
+      '毛利率 =（营收 − 销货成本）÷ 营收。越高代表产品定价能力越强。',
+    'tip.pe':
+      '市盈率 = 股价 ÷ 每股收益。越低说明相对盈利越便宜，是估值快速参考。',
+    'tip.marketCap': '市值 = 股价 × 总股本，反映公司在市场上的总体规模。',
+    'tip.currentPrice': '港股最新收盘价（HKD）。',
+    'tip.changePercent': '相对前一交易日收盘价的涨跌幅。绿涨红跌。',
+    'tip.pbRatio':
+      '市净率 = 股价 ÷ 每股净资产。越低可能越便宜，但也可能暗示业务有问题。',
+    'tip.dividendYield':
+      '股息率 = 每股年度分红 ÷ 股价，代表持股的现金回报部分。',
+    'tip.roe':
+      'ROE = 净利润 ÷ 股东权益。衡量公司用股东的钱赚钱的效率，越高越好。',
 
     // Search
     'search.placeholder': '搜索港股代码 / 名称（如 0700 腾讯）',

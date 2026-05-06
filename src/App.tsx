@@ -17,11 +17,13 @@ function FinancialCard({
   value,
   suffix,
   tone,
+  tooltip,
 }: {
   label: string;
   value: string;
   suffix?: string;
   tone?: 'bull' | 'bear' | 'neutral';
+  tooltip?: string;
 }) {
   const toneColor =
     tone === 'bull'
@@ -30,9 +32,14 @@ function FinancialCard({
         ? 'text-[#f85149]'
         : 'text-[#e6edf3]';
   return (
-    <div className="rounded-xl bg-[#0d1117] border border-[#21262d] px-4 py-3.5 hover:border-[#30363d] transition-colors">
-      <div className="text-[#8b949e] text-xs uppercase tracking-widest mb-1.5">
-        {label}
+    <div
+      className="group relative rounded-xl bg-[#0d1117] border border-[#21262d] px-4 py-3.5 hover:border-[#30363d] transition-colors"
+    >
+      <div className="text-[#8b949e] text-xs uppercase tracking-widest mb-1.5 flex items-center gap-1">
+        <span>{label}</span>
+        {tooltip && (
+          <i className="fa-regular fa-circle-question text-[#484f58] text-[11px] group-hover:text-[#8b949e] transition-colors" />
+        )}
       </div>
       <div className="flex items-baseline gap-1">
         <span className={`font-mono text-lg font-semibold ${toneColor}`}>
@@ -40,6 +47,17 @@ function FinancialCard({
         </span>
         {suffix && <span className="text-[#8b949e] text-xs">{suffix}</span>}
       </div>
+      {tooltip && (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64
+                     rounded-lg border border-[#30363d] bg-[#161b27]/95 backdrop-blur-md
+                     px-3 py-2 text-xs leading-5 text-[#c9d1d9] shadow-lg
+                     opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-30"
+        >
+          {tooltip}
+        </div>
+      )}
     </div>
   );
 }
@@ -130,6 +148,14 @@ function AppContent() {
           <StockCodeSearch onSelect={setSelected} selected={selected} />
         </div>
 
+        {/* Revenue Segment Breakdown (moved to top so the visualization
+            is the first thing users see after picking a stock) */}
+        {selected && (
+          <div className="mb-10">
+            <RevenueSegmentBreakdown stockCode={selected.symbol} />
+          </div>
+        )}
+
         {/* Financial snapshot */}
         {selected && (
           <div className="mb-10">
@@ -144,33 +170,39 @@ function AppContent() {
                 label={t('snapshot.revenue')}
                 value={selected.financials.revenue.toLocaleString()}
                 suffix={t('snapshot.unitMHKD')}
+                tooltip={t('tip.revenue')}
               />
               <FinancialCard
                 label={t('snapshot.netIncome')}
                 value={selected.financials.netIncome.toLocaleString()}
                 suffix={t('snapshot.unitMHKD')}
                 tone="bull"
+                tooltip={t('tip.netIncome')}
               />
               <FinancialCard
                 label={t('snapshot.growth')}
                 value={`${selected.financials.revenueGrowth > 0 ? '+' : ''}${selected.financials.revenueGrowth}`}
                 suffix="%"
                 tone={selected.financials.revenueGrowth >= 0 ? 'bull' : 'bear'}
+                tooltip={t('tip.growth')}
               />
               <FinancialCard
                 label={t('snapshot.grossMargin')}
                 value={selected.financials.grossMargin.toFixed(1)}
                 suffix="%"
+                tooltip={t('tip.grossMargin')}
               />
               <FinancialCard
                 label={t('snapshot.pe')}
                 value={selected.financials.peRatio.toFixed(1)}
                 suffix="x"
+                tooltip={t('tip.pe')}
               />
               <FinancialCard
                 label={t('snapshot.marketCap')}
                 value={selected.financials.marketCap.toLocaleString()}
                 suffix={t('snapshot.unitBHKD')}
+                tooltip={t('tip.marketCap')}
               />
             </div>
           </div>
@@ -255,10 +287,9 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Memo + Revenue */}
+        {/* Memo */}
         <div className="space-y-6">
           <MemoGenerator stock={selected} />
-          <RevenueSegmentBreakdown stockCode={selected?.symbol ?? ''} />
         </div>
       </section>
 
